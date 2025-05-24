@@ -1,0 +1,25 @@
+Package: nanoporeQC
+Type: Package
+Title: Read Accuracy Analysis for Oxford Nanopore Sequencing Data
+Version: 1.0.0
+Author: Marko Suokas <marko.suokas@oulu.fi>
+Maintainer: Your Name <your.email@example.com>
+Description: Provides tools for analyzing Oxford Nanopore sequencing data quality,
+    including read accuracy distribution analysis through alignment to reference
+    sequences. The main function creates publication-ready plots showing read
+    accuracy distributions with statistical summaries.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports:
+    ggplot2,
+    ggthemes,
+    Rsamtools,
+    parallel
+SystemRequirements: minimap2, samtools
+RoxygenNote: 7.3.2
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
