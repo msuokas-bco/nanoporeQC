@@ -2,13 +2,13 @@ Package: nanoporeQC
 Type: Package
 Title: Read Accuracy Analysis for Oxford Nanopore Sequencing Data
 Version: 1.0.0
-Author: Marko Suokas <marko.suokas@oulu.fi>
-Maintainer: Your Name <your.email@example.com>
-Description: Provides tools for analyzing Oxford Nanopore sequencing data quality,
-    including read accuracy distribution analysis through alignment to reference
-    sequences. The main function creates publication-ready plots showing read
-    accuracy distributions with statistical summaries.
-License: GPL-3
+Author: Marko Suokas <your.email@example.com>
+Maintainer: Marko Suokas <your.email@example.com>
+Description: Provides a tool for analyzing Oxford Nanopore sequencing data quality.
+    Tool takes advantage of known sequence of the DNA CS standard, aligns reads to
+    the reference and calculates sequencing accuracy. The function creates a plot
+    showing read accuracy distribution swith statistics.
+License: GPL-3s
 Encoding: UTF-8
 LazyData: true
 Imports:

@@ -9,21 +9,20 @@ The `plot_read_accuracy()` function processes basecalled FASTQ files from Oxford
 ## Features
 
 -   **Automated alignment** using minimap2 with optimized ONT parameters
--   Supports both compressed and non-compressed fastq
+-   **Both compressed and non-compressed fastq** are supported
 -   **Per-read accuracy calculation** based on edit distance from reference
 -   **Statistical analysis** including mean, median, and standard deviation
 -   **Publication-ready plots** with customizable theming
--   **Flexible output options** - return plot or save to disk
--   **Parallel processing** support for faster alignment
+-   **Flexible output options** - return plot or save to disks
 
 ## Prerequisites
 
-Sequencing library needs to have DNA CS control included. FastQ file needs to contain these sequences.
+Sequencing library needs to include DNA CS control.
 
 ### R Packages
 
 ``` r
-install.packages(c("ggplot2", "ggthemes"))
+install.packages(c("ggplot2", "ggthemes", "devtools"))
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("Rsamtools")
@@ -57,13 +56,20 @@ brew install minimap2 samtools
 conda install -c bioconda minimap2 samtools
 ```
 
+## Installation of nanoporeQC R package
+
+```r
+library(devtools)
+install_github("msuokas-bco/nanoporeQC")
+```
+
 ## Usage
 
 ### Basic Usage
 
 ``` r
-# Load the function (assuming it's in your environment)
-source("path/to/plot_read_accuracy.R")
+# Load the installed package
+library(nanoporeQC)
 
 # Analyze a FASTQ file and display the plot
 plot <- plot_read_accuracy("sample.fastq")
@@ -125,7 +131,6 @@ p + ggplot2::theme_minimal() +
 -   **Histogram**: Distribution of per-read accuracies (binwidth = 0.001)
 -   **Statistical lines**: Mean (red dashed) and ±2σ bounds (blue dashed)
 -   **Annotations**: Mean, median, standard deviation, and sample size
--   **Professional theme**: Using ggthemes::theme_fivethirtyeight()
 
 ## Technical Details
 
