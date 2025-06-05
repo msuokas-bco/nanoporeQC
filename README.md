@@ -129,8 +129,8 @@ p + ggplot2::theme_minimal() +
 ### Plot Features
 
 -   **Histogram**: Distribution of per-read accuracies (binwidth = 0.001)
--   **Statistical lines**: Mean (red dashed) and ±2σ bounds (blue dashed)
--   **Annotations**: Mean, median, standard deviation, and sample size
+-   **Statistical lines**: Mean (red dashed) and 5 % percentile accuracy (blue dashed)
+-   **Annotations**: Mean, median, 5 % percentile, and sample size
 
 ## Technical Details
 
@@ -139,7 +139,7 @@ p + ggplot2::theme_minimal() +
 1.  **Reference preparation**: Creates temporary FASTA file with DNA CS standard sequence
 2.  **Sequence alignment**: Uses minimap2 with ONT-optimized parameters (`-ax map-ont`)
 3.  **Accuracy calculation**: Computes per-read accuracy as `(read_length - edit_distance) / read_length`
-4.  **Statistical analysis**: Calculates descriptive statistics and confidence bounds
+4.  **Statistical analysis**: Calculates descriptive statistics
 5.  **Visualization**: Generates histogram with statistical annotations
 6.  **Cleanup**: Removes temporary files automatically
 
