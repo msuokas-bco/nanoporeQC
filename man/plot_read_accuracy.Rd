@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_ont_accuracy.R
 \name{plot_read_accuracy}
 \alias{plot_read_accuracy}
-\title{Plot Nanopore Read Accuracy Distribution}
+\title{Plot Nanopore Read Accuracy}
 \usage{
 plot_read_accuracy(
   fastq,
@@ -24,7 +24,7 @@ A ggplot2 object showing the distribution of read accuracies,
   or NULL if no aligned reads are found.
 }
 \description{
-Analyzes basecalled FASTQ files from Oxford Nanopore sequencer to calculate and visualize
+Analyzes basecalled FASTQ files from Oxford Nanopore sequencera to calculate and visualize
 read accuracy distributions by aligning reads to a DNA CS standard reference sequence.
 }
 \details{
