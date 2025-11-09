@@ -2,58 +2,60 @@
 % Please edit documentation in R/plot_ont_accuracy.R
 \name{plot_read_accuracy}
 \alias{plot_read_accuracy}
-\title{Plot Nanopore Read Accuracy}
+\title{Plot Nanopore Read Accuracy (Deprecated)}
 \usage{
 plot_read_accuracy(
   fastq,
   output_dir = NULL,
-  threads = parallel::detectCores() - 2
+  threads = 2,
+  output_format = "plot",
+  table_format = "kable",
+  table_theme = "sandstone"
 )
 }
 \arguments{
 \item{fastq}{Character string. Path to the input FASTQ file.}
 
-\item{output_dir}{Character string or NULL. Directory to save output files.
-If NULL (default), no files are saved to disk.}
+\item{output_dir}{Character string or NULL. Directory to save output files.}
 
-\item{threads}{Integer. Number of threads to use for alignment.
-Default is parallel::detectCores() - 2.}
+\item{threads}{Integer. Number of threads to use for alignment.}
+
+\item{output_format}{Character string. Format for output: "plot", "table", or "both".}
+
+\item{table_format}{Character string. Format for table output: "kable" or "data.frame".}
+
+\item{table_theme}{Character string. Theme for styling: "sandstone", "simplex", or "flatly".}
 }
 \value{
-A ggplot2 object showing the distribution of read accuracies,
-  or NULL if no aligned reads are found.
+Same as \code{\link{display_read_accuracy}}
 }
 \description{
-Analyzes basecalled FASTQ files from Oxford Nanopore sequencera to calculate and visualize
-read accuracy distributions by aligning reads to a DNA CS standard reference sequence.
+\lifecycle{deprecated}
+
+This function has been deprecated and will be removed in a future version.
+Please use \code{\link{display_read_accuracy}} instead, which better reflects
+the expanded functionality (plots, tables, or both).
 }
 \details{
-This function performs the following steps:
-\enumerate{
-  \item Creates a temporary reference sequence (DNA CS standard)
-  \item Aligns FASTQ reads using minimap2
-  \item Calculates per-read accuracy based on edit distance
-  \item Creates a histogram showing accuracy distribution with statistical annotations
-}
+This function is a wrapper around \code{\link{display_read_accuracy}} and is
+maintained for backward compatibility. It will be removed in version 1.0.0.
 
-The function requires external tools minimap2 and samtools to be installed
-and available in the system PATH.
+Please update your code to use \code{display_read_accuracy()} instead:
+\itemize{
+\item Old: \code{plot_read_accuracy("sample.fastq")}
+\item New: \code{display_read_accuracy("sample.fastq")}
+}
 }
 \examples{
 \dontrun{
-# Basic usage - returns ggplot object
-p <- plot_read_accuracy("sample.fastq")
-print(p)
-
-# Save results to directory
-p <- plot_read_accuracy("sample.fastq", output_dir = "./results/")
-
-# Use in R Markdown
+# Deprecated - do not use
 plot_read_accuracy("sample.fastq")
 
-# Customize further
-p <- plot_read_accuracy("sample.fastq")
-p + ggplot2::theme_minimal()
+# Use this instead
+display_read_accuracy("sample.fastq")
 }
 
+}
+\seealso{
+\code{\link{display_read_accuracy}} for the current function
 }
