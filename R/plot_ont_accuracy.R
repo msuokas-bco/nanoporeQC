@@ -12,13 +12,13 @@
 #' @param threads Integer. Number of threads to use for alignment.
 #' @param output_format Character string. Format for output: "plot", "table", or "both".
 #' @param table_format Character string. Format for table output: "kable" or "data.frame".
-#' @param table_theme Character string. Theme for styling: "sandstone", "simplex", or "flatly".
+#' @param theme Character string. Theme for styling: "sandstone", "simplex", "flatly", "journal", "lumen", "spacelab" or "united".
 #'
 #' @return Same as \code{\link{display_read_accuracy}}
 #'
 #' @details
 #' This function is a wrapper around \code{\link{display_read_accuracy}} and is
-#' maintained for backward compatibility. It will be removed in version 1.0.0.
+#' maintained for backward compatibility. It will be removed in future.
 #'
 #' Please update your code to use \code{display_read_accuracy()} instead:
 #' \itemize{
@@ -44,7 +44,7 @@ plot_read_accuracy <- function(
     threads = 2,
     output_format = "plot",
     table_format = "kable",
-    table_theme = "sandstone"
+    theme = "sandstone"
 ) {
 
   # Issue deprecation warning
@@ -66,6 +66,6 @@ plot_read_accuracy <- function(
     threads = threads,
     output_format = output_format,
     table_format = table_format,
-    table_theme = table_theme
+    theme = theme
   )
 }

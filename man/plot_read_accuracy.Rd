@@ -10,7 +10,7 @@ plot_read_accuracy(
   threads = 2,
   output_format = "plot",
   table_format = "kable",
-  table_theme = "sandstone"
+  theme = "sandstone"
 )
 }
 \arguments{
@@ -24,7 +24,7 @@ plot_read_accuracy(
 
 \item{table_format}{Character string. Format for table output: "kable" or "data.frame".}
 
-\item{table_theme}{Character string. Theme for styling: "sandstone", "simplex", or "flatly".}
+\item{theme}{Character string. Theme for styling: "sandstone", "simplex", "flatly", "journal", "lumen", "spacelab" or "united".}
 }
 \value{
 Same as \code{\link{display_read_accuracy}}
@@ -38,7 +38,7 @@ the expanded functionality (plots, tables, or both).
 }
 \details{
 This function is a wrapper around \code{\link{display_read_accuracy}} and is
-maintained for backward compatibility. It will be removed in version 1.0.0.
+maintained for backward compatibility. It will be removed in future.
 
 Please update your code to use \code{display_read_accuracy()} instead:
 \itemize{
