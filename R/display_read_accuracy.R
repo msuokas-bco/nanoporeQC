@@ -118,6 +118,8 @@ display_read_accuracy <- function(
     stop("FASTQ file must be a single file path string")
   }
 
+  fastq <- path.expand(fastq)
+
   if (!file.exists(fastq)) {
     stop("FASTQ file does not exist")
   }
