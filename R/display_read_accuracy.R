@@ -8,14 +8,15 @@
 #' @param output_dir Character string or NULL. Directory to save output files.
 #'   If NULL (default), no files are saved to disk.
 #' @param threads Integer. Number of threads to use for alignment.
-#'   Default is 2
+#'   Default is 2.
 #' @param output_format Character string. Format for output: "plot" (default), "table", or "both".
 #'   "plot" returns a ggplot2 histogram, "table" returns a summary statistics table,
 #'   "both" returns a list with both elements.
 #' @param table_format Character string. Format for table output: "kable" (default) or "data.frame".
 #'   Only used when output_format is "table" or "both".
-#' @param theme Character string. Theme for plot and table styling: "sandstone" (default), "simplex", "flatly",
-#'  "journal", "lumen", "spacelab", "united".
+#' @param theme Character string. Theme for plot and table styling. Available themes: "sandstone" (default),
+#'   "simplex", "flatly", "journal", "lumen", "spacelab", "united", "default", "cerulean", "cosmo",
+#'   "litera", "lux", "materia", "minty", "zephyr".
 #'   The theme affects both the plot colors (histogram fill, lines, text) and table appearance.
 #'
 #' @return Depends on output_format:
@@ -45,8 +46,9 @@
 #' When output_format includes "table", the following statistics are provided:
 #' mean, median, standard deviation, min, max, and various percentiles (5th, 25th, 75th, 95th).
 #'
-#' The theme parameter creates visual consistency between plots and tables, with three
-#' professional options inspired by Quarto themes.
+#' The theme parameter creates visual consistency between plots and tables, offering 15
+#' professional themes from the Quarto/Bootswatch collection. Each theme's colors are
+#' algorithmically derived from a primary brand color to ensure visual harmony.
 #'
 #' @examples
 #' \dontrun{
@@ -83,14 +85,10 @@
 #'                                 theme = "sandstone")
 #' }
 #'
-#' @seealso \code{\link{plot_read_accuracy}} (deprecated, use this function instead)
-#'
 #' @import ggplot2
-#' @import ggthemes
-#' @import Rsamtools
+#' @importFrom Rsamtools ScanBamParam scanBam
 #' @importFrom stats median sd quantile
 #' @importFrom utils write.table
-#' @importFrom parallel detectCores
 #' @importFrom htmltools HTML browsable
 #' @export
 
@@ -106,7 +104,7 @@ display_read_accuracy <- function(
   # Validate output_format parameter
   output_format <- match.arg(output_format, c("plot", "table", "both"))
   table_format <- match.arg(table_format, c("kable", "data.frame"))
-  theme <- match.arg(theme, c("sandstone", "simplex", "flatly", "journal", "lumen", "spacelab", "united"))
+  theme <- match.arg(theme, names(THEME_SPECS))
 
   # Check for htmltools if needed
   if (output_format %in% c("table", "both") && table_format == "kable") {
@@ -142,9 +140,6 @@ display_read_accuracy <- function(
   )
   writeLines(c(">DNA_CS_standard", reference_seq), ref_fasta)
 
-  # Get reference length from sequence
-  reference_length <- nchar(reference_seq)
-
   # Step 2: Run alignment
   bam_out <- tempfile(fileext = ".bam")
 
@@ -158,11 +153,11 @@ display_read_accuracy <- function(
 
   # Run alignment with better error handling
   cmd_align <- sprintf(
-    "minimap2 -ax map-ont -t %d %s %s | samtools view -b -F 4 | samtools sort -o %s",
+    "minimap2 -ax map-ont -t %d %s %s | samtools view -b -F 2308 | samtools sort -o %s",
     threads,
-    ref_fasta,
-    fastq,
-    bam_out
+    shQuote(ref_fasta),
+    shQuote(fastq),
+    shQuote(bam_out)
   )
 
   result <- system(cmd_align, ignore.stdout = TRUE, ignore.stderr = TRUE)
@@ -171,18 +166,18 @@ display_read_accuracy <- function(
   }
 
   # Index the BAM file
-  index_result <- system(sprintf("samtools index %s", bam_out), ignore.stdout = TRUE)
+  index_result <- system(sprintf("samtools index %s", shQuote(bam_out)), ignore.stdout = TRUE)
   if (index_result != 0) {
     stop("BAM indexing failed with exit code: ", index_result)
   }
 
   # Step 3: Read alignment with corrected parameters
-  param <- Rsamtools::ScanBamParam(
+  param <- ScanBamParam(
     what = c("qname", "flag", "mapq", "cigar", "seq", "qwidth"),
     tag = "NM"
   )
 
-  alignments <- Rsamtools::scanBam(bam_out, param = param)[[1]]
+  alignments <- scanBam(bam_out, param = param)[[1]]
 
   # Function to calculate alignment length from CIGAR string
   get_alignment_length <- function(cigar_string) {
@@ -208,12 +203,8 @@ display_read_accuracy <- function(
     return(aln_len)
   }
 
-  # Initialize variables
-  total_matched_bases <- 0
-  total_alignment_length <- 0
   accuracies <- numeric()
 
-  # Process alignments with alignment-based calculation
   for (i in seq_along(alignments$qname)) {
     cigar <- alignments$cigar[i]
     edit_distance <- alignments$tag$NM[i]
@@ -224,20 +215,12 @@ display_read_accuracy <- function(
       if (!is.na(alignment_length) && alignment_length > 0) {
         matches <- alignment_length - edit_distance
 
-        # Ensure matches is not negative
         if (matches >= 0) {
-          read_accuracy <- matches / alignment_length
-          accuracies <- c(accuracies, read_accuracy)
-          total_matched_bases <- total_matched_bases + matches
-          total_alignment_length <- total_alignment_length + alignment_length
+          accuracies <- c(accuracies, matches / alignment_length)
         }
       }
     }
   }
-
-  # Calculate overall accuracy
-  overall_accuracy <- ifelse(total_alignment_length > 0,
-                             total_matched_bases / total_alignment_length, 0)
 
   # Clean up temporary files
   file.remove(ref_fasta)
@@ -251,9 +234,6 @@ display_read_accuracy <- function(
     median_accuracy <- median(accuracies)
     mean_accuracy <- mean(accuracies)
     std_dev <- ifelse(length(accuracies) > 1, sd(accuracies), 0)
-    two_std_dev <- 2 * std_dev
-    lower_bound <- max(0, mean_accuracy - two_std_dev)
-    upper_bound <- min(1, mean_accuracy + two_std_dev)
     fifth <- quantile(accuracies, probs = 0.05)
 
     # Calculate additional statistics for table
@@ -267,109 +247,7 @@ display_read_accuracy <- function(
     results <- list()
 
     # Define theme configuration (used for both plot and table)
-    theme_config <- switch(theme,
-                           "sandstone" = list(
-                             header_bg = "#DFA878",
-                             header_color = "#FFFFFF",
-                             stripe_color = "#F8F5F0",
-                             hover_color = "#F5EBE0",
-                             font_family = "'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif",
-                             title_color = "#8E5B3C",
-                             value_color = "#DFA878",
-                             fill_color = "#DFA878",
-                             mean_line_color = "#8E5B3C",
-                             percentile_line_color = "#C4956C",
-                             bg_color = "#F8F5F0",
-                             text_color = "#3D3D3D"
-                           ),
-                           "simplex" = list(
-                             header_bg = "#D9230F",
-                             header_color = "#FFFFFF",
-                             stripe_color = "#F9F9F9",
-                             hover_color = "#FFF5F5",
-                             font_family = "'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
-                             title_color = "#D9230F",
-                             value_color = "#D9230F",
-                             fill_color = "#D9230F",
-                             mean_line_color = "#9E1A0C",
-                             percentile_line_color = "#FF4136",
-                             bg_color = "#FFFFFF",
-                             text_color = "#333333"
-                           ),
-                           "flatly" = list(
-                             header_bg = "#2C3E50",
-                             header_color = "#FFFFFF",
-                             stripe_color = "#ECF0F1",
-                             hover_color = "#D5DBDB",
-                             font_family = "'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif",
-                             title_color = "#18BC9C",
-                             value_color = "#18BC9C",
-                             fill_color = "#18BC9C",
-                             mean_line_color = "#2C3E50",
-                             percentile_line_color = "#3498DB",
-                             bg_color = "#ECF0F1",
-                             text_color = "#2C3E50"
-                           ),
-                           switch(theme,
-                                  "journal" = list(
-                                    header_bg           = "#EB6864",              # confirmed brand‐primary
-                                    header_color        = "#FFFFFF",              # white on red header
-                                    stripe_color        = "#F8F8F8",              # *approximate* light grey
-                                    hover_color         = "#F2DEDE",              # *approximate* pale red hover
-                                    font_family         = "'Georgia', 'Times New Roman', Times, serif",   # confirmed serif stack
-                                    title_color         = "#EB6864",              # use same as primary to stay on brand
-                                    value_color         = "#EB6864",              # brand accent
-                                    fill_color          = "#EB6864",              # brand accent
-                                    mean_line_color     = "#C44E4A",              # *approximate* deeper red (custom)
-                                    percentile_line_color = "#F7CACA",            # *approximate* softer tint
-                                    bg_color            = "#FFFFFF",              # confirmed white background
-                                    text_color          = "#333333"               # typical dark grey (approximate)
-                                  )
-                           ),
-                           "lumen" = list(
-                             header_bg            = "#EDF6FF",        # very light blue‐white background
-                             header_color         = "#1F2D3D",        # dark slate text
-                             stripe_color         = "#F7FBFF",        # ultra‑light stripe for tables
-                             hover_color          = "#E4F2FF",        # subtle blue hover highlight
-                             font_family          = "'Helvetica Neue', Helvetica, Arial, sans‑serif", # clean sans‑serif stack
-                             title_color          = "#2C4A6E",        # strong blue tone for headings
-                             value_color          = "#4D79B6",        # mid‑blue accent
-                             fill_color           = "#4D79B6",        # same accent for fills
-                             mean_line_color      = "#2C4A6E",        # darker blue for mean line
-                             percentile_line_color= "#A3BEE8",        # soft lighter blue for percentile line
-                             bg_color             = "#FFFFFF",        # white background
-                             text_color           = "#2E3033"         # dark grey/near‑black text
-                           ),
-                           "spacelab" = list(
-                             header_bg            = "#F2F6FA",        # very light‑silver background
-                             header_color         = "#263238",        # dark cool text
-                             stripe_color         = "#F9FBFC",        # very light stripe
-                             hover_color          = "#E7EFF6",        # pale steel‑blue hover
-                             font_family          = "'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans‑serif", # sleek modern sans
-                             title_color          = "#3C6478",        # bluish‑grey heading tone
-                             value_color          = "#446E9B",        # blue accent (matching palette approx) :contentReference[oaicite:3]{index=3}
-                             fill_color           = "#446E9B",        # same fill accent
-                             mean_line_color      = "#2E4B61",        # darker variant for mean line
-                             percentile_line_color= "#8FAAC7",        # lighter variant for percentile
-                             bg_color             = "#FFFFFF",        # white main background
-                             text_color           = "#3A3D3F"         # dark grey body text
-                           ),
-                           "united" = list(
-                             header_bg            = "#FF6F21",        # vibrant orange accent (Ubuntu orange vibe)
-                             header_color         = "#FFFFFF",        # white text on orange header
-                             stripe_color         = "#FFF4EB",        # very light warm stripe for tables
-                             hover_color          = "#FFE8D6",        # pale warm hover highlight
-                             font_family          = "'Ubuntu', 'Helvetica Neue', Helvetica, Arial, sans‑serif", # Ubuntu font (theme uses ‘Ubuntu’ mention) :contentReference[oaicite:5]{index=5}
-                             title_color          = "#CC4E17",        # deeper orange for headings
-                             value_color          = "#FF6F21",        # orange accent
-                             fill_color           = "#FF6F21",        # same accent for fills
-                             mean_line_color      = "#A33C14",        # darker orange for mean line
-                             percentile_line_color= "#FFB289",        # lighter orange for percentile line
-                             bg_color             = "#FFFFFF",        # white background
-                             text_color           = "#2D2D2D"         # dark grey text
-                           )
-
-    )
+    theme_config <- get_theme_config(theme)
 
     # Create plot if requested
     if (output_format %in% c("plot", "both")) {

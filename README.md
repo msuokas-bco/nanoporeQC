@@ -7,7 +7,7 @@ A R package for analyzing and visualizing read accuracy distributions from Oxfor
 -   Automated Alignment: Uses minimap2 for read alignment to DNA CS standard
 -   Comprehensive Statistics: Calculates mean, median, percentiles, and distribution metrics
 -   Flexible Output Formats: Generate plots, tables, or both
--   Themes: Built-in themes (sandstone, simplex, flatly) with unified styling
+-   Themes: 15 built-in light Quarto/Bootswatch themes with unified styling
 -   Export Capabilities: Save results as PNG, CSV files and per-read accuracy values in a text file
 
 ## Installation
@@ -84,7 +84,7 @@ Parameters:
 -   `threads`: Number of threads for alignment (default: 2)
 -   `output_format`: Output type - "plot", "table", or "both" (default: "plot")
 -   `table_format`: Table format - "kable" (HTML) or "data.frame" (default: "kable")
--   `theme`: Visual theme - "sandstone", "simplex", "flatly", "journal", "lumen", "spacelab" or "united" (default: "sandstone")
+-   `theme`: Visual theme from Quarto/Bootswatch collection (default: "sandstone"). Available: "sandstone", "simplex", "flatly", "journal", "lumen", "spacelab", "united", "default", "cerulean", "cosmo", "litera", "lux", "materia", "minty", "zephyr"
 
 ### Output Formats
 
@@ -182,7 +182,13 @@ p1 / p2 / p3 / p4 / p5 / p6 / p7
 
 ## Themes
 
-The package includes seven themes that are inspired by Bootstrap 5 themes also used by Quarto.
+The package includes 15 light-background themes matching the Quarto/Bootswatch collection, allowing seamless visual integration with Quarto reports.
+
+**Original themes:** sandstone, simplex, flatly, journal, lumen, spacelab, united
+
+**Additional Quarto themes:** default, cerulean, cosmo, litera, lux, materia, minty, zephyr
+
+Theme colors are algorithmically derived from each theme's primary brand color, ensuring visual harmony between the histogram, percentile lines, table headers, and accent elements. Use the same theme name in your Quarto document YAML to maintain a consistent look across your report.
 
 ## Understanding the Analysis
 

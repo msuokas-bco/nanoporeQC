@@ -20,7 +20,7 @@ display_read_accuracy(
 If NULL (default), no files are saved to disk.}
 
 \item{threads}{Integer. Number of threads to use for alignment.
-Default is 2}
+Default is 2.}
 
 \item{output_format}{Character string. Format for output: "plot" (default), "table", or "both".
 "plot" returns a ggplot2 histogram, "table" returns a summary statistics table,
@@ -29,8 +29,9 @@ Default is 2}
 \item{table_format}{Character string. Format for table output: "kable" (default) or "data.frame".
 Only used when output_format is "table" or "both".}
 
-\item{theme}{Character string. Theme for plot and table styling: "sandstone" (default), "simplex", "flatly",
-"journal", "lumen", "spacelab", "united".
+\item{theme}{Character string. Theme for plot and table styling. Available themes: "sandstone" (default),
+"simplex", "flatly", "journal", "lumen", "spacelab", "united", "default", "cerulean", "cosmo",
+"litera", "lux", "materia", "minty", "zephyr".
 The theme affects both the plot colors (histogram fill, lines, text) and table appearance.}
 }
 \value{
@@ -66,8 +67,9 @@ and available in the system PATH.
 When output_format includes "table", the following statistics are provided:
 mean, median, standard deviation, min, max, and various percentiles (5th, 25th, 75th, 95th).
 
-The theme parameter creates visual consistency between plots and tables, with three
-professional options inspired by Quarto themes.
+The theme parameter creates visual consistency between plots and tables, offering 15
+professional themes from the Quarto/Bootswatch collection. Each theme's colors are
+algorithmically derived from a primary brand color to ensure visual harmony.
 }
 \examples{
 \dontrun{
@@ -104,7 +106,4 @@ results <- display_read_accuracy("sample.fastq",
                                 theme = "sandstone")
 }
 
-}
-\seealso{
-\code{\link{plot_read_accuracy}} (deprecated, use this function instead)
 }

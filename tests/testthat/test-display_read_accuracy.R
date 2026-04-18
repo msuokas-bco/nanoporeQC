@@ -205,11 +205,36 @@ test_that("display_read_accuracy works with all themes", {
   temp_fastq <- create_test_fastq(10)
   on.exit(unlink(temp_fastq))
 
-  themes <- c("sandstone", "simplex", "flatly")
+  # All 15 themes: 7 existing + 8 new light themes
+  themes <- c(
+    "sandstone", "simplex", "flatly", "journal", "lumen", "spacelab", "united",
+    "default", "cerulean", "cosmo", "litera", "lux", "materia", "minty", "zephyr"
+  )
 
   for (theme_name in themes) {
     result <- display_read_accuracy(temp_fastq, theme = theme_name, output_format = "plot")
     expect_s3_class(result, "ggplot")
+  }
+})
+
+test_that("display_read_accuracy generates valid theme configs for all themes", {
+  skip_if_not(has_dependencies, "minimap2 or samtools not available")
+
+  temp_fastq <- create_test_fastq(10)
+  on.exit(unlink(temp_fastq))
+
+  themes <- c(
+    "sandstone", "simplex", "flatly", "journal", "lumen", "spacelab", "united",
+    "default", "cerulean", "cosmo", "litera", "lux", "materia", "minty", "zephyr"
+  )
+
+  for (theme_name in themes) {
+    result <- display_read_accuracy(temp_fastq, theme = theme_name, output_format = "plot")
+    # Verify result is ggplot object with theme applied
+    expect_s3_class(result, "ggplot")
+    # Test with table format too
+    result_tbl <- display_read_accuracy(temp_fastq, theme = theme_name, output_format = "table", table_format = "data.frame")
+    expect_s3_class(result_tbl, "data.frame")
   }
 })
 
