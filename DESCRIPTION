@@ -1,6 +1,6 @@
 Package: nanoporeQC
 Title: Quality Control for Oxford Nanopore Sequencing Data
-Version: 1.2.0
+Version: 1.3.0
 Authors@R: 
     person("Marko", "Suokas", email = "marko.suokas@example.com",
     role = c("aut", "cre"))

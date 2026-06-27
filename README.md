@@ -6,9 +6,10 @@ A R package for analyzing and visualizing read accuracy distributions from Oxfor
 
 -   Automated Alignment: Uses minimap2 for read alignment to DNA CS standard
 -   Comprehensive Statistics: Calculates mean, median, percentiles, and distribution metrics
+-   Read Quality: Reports the ONT-style mean Phred quality of the aligned reads
 -   Flexible Output Formats: Generate plots, tables, or both
 -   Themes: 15 built-in light Quarto/Bootswatch themes with unified styling
--   Export Capabilities: Save results as PNG, CSV files and per-read accuracy values in a text file
+-   Export Capabilities: Save results as PNG, CSV files and per-read accuracy/quality values
 
 ## Installation
 
@@ -105,13 +106,20 @@ Returns summary statistics including:
 -   Mean, median, standard deviation
 -   Min, max values
 -   Percentiles (5th, 25th, 75th, 95th)
+-   Mean read quality (ONT-style mean Phred Q)
 -   Total number of reads
 
 When `table_format = "kable"`, returns an interactive HTML table with professional styling.
 
+The read quality is the ONT-style mean Phred score: each read's per-base Phred values
+are converted to error probabilities, averaged, and converted back to a Phred score
+(then averaged across reads). This is the same calculation MinKNOW/pycoQC use for the
+per-read mean qscore, so the number is comparable to quality reported elsewhere and
+also applies to real samples that have no reference to align against.
+
 #### Both Output
 
-Returns a list with `$plot` and `$table` elements.
+Returns a list with `$plot` (accuracy histogram) and `$table` elements.
 
 ### Examples
 
@@ -128,9 +136,10 @@ display_read_accuracy(
 
 This creates:
 
--   `accuracy_distribution.png` - High-resolution plot (300 DPI)
+-   `accuracy_distribution.png` - High-resolution accuracy histogram (300 DPI)
 -   `accuracy_summary.csv` - Summary statistics table
 -   `read_accuracies.txt` - Raw per-read accuracy values
+-   `read_metrics.csv` - Per-read accuracy and mean read quality (Q)
 
 #### Get Data Frame for Further Analysis
 

@@ -23,7 +23,7 @@
 #' \itemize{
 #'   \item "plot": A ggplot2 object showing the distribution of read accuracies
 #'   \item "table": An HTML table (browsable) or data.frame with summary statistics
-#'   \item "both": A list with $plot and $table elements
+#'   \item "both": A list with $plot (accuracy histogram) and $table elements
 #'   \item NULL if no aligned reads are found
 #' }
 #'
@@ -45,6 +45,14 @@
 #'
 #' When output_format includes "table", the following statistics are provided:
 #' mean, median, standard deviation, min, max, and various percentiles (5th, 25th, 75th, 95th).
+#'
+#' Per-read basecall quality is also reported as an ONT-style mean Phred score.
+#' For each read the per-base Phred values are converted to error probabilities,
+#' averaged, and converted back to a Phred score (Q = -10 * log10(mean error
+#' probability)), matching how MinKNOW/pycoQC report the per-read mean qscore.
+#' The table adds the mean read quality (Q) across all aligned reads, and the
+#' per-read accuracy and quality are written to read_metrics.csv when output_dir
+#' is set.
 #'
 #' The theme parameter creates visual consistency between plots and tables, offering 15
 #' professional themes from the Quarto/Bootswatch collection. Each theme's colors are
@@ -175,7 +183,7 @@ display_read_accuracy <- function(
 
   # Step 3: Read alignment with corrected parameters
   param <- ScanBamParam(
-    what = c("qname", "flag", "mapq", "cigar", "seq", "qwidth"),
+    what = c("qname", "flag", "mapq", "cigar", "seq", "qwidth", "qual"),
     tag = "NM"
   )
 
@@ -205,7 +213,25 @@ display_read_accuracy <- function(
     return(aln_len)
   }
 
+  # ONT-style mean read quality (Phred): convert per-base Q to error
+  # probabilities, average them, then convert back to a Phred score. This
+  # matches how MinKNOW/pycoQC report the per-read "mean qscore" and is more
+  # meaningful than a plain arithmetic mean of Phred values.
+  mean_read_quality <- function(qual_string) {
+    if (is.null(qual_string) || is.na(qual_string) || nchar(qual_string) == 0) {
+      return(NA_real_)
+    }
+    phred <- utf8ToInt(qual_string) - 33L
+    if (length(phred) == 0) return(NA_real_)
+    -10 * log10(mean(10^(-phred / 10)))
+  }
+
+  # Quality strings are PhredQuality (ASCII offset 33); convert to characters
+  # so they can be decoded per read. May be empty if the BAM lacks qualities.
+  qual_strings <- as.character(alignments$qual)
+
   accuracies <- numeric()
+  mean_quals <- numeric()
 
   for (i in seq_along(alignments$qname)) {
     cigar <- alignments$cigar[i]
@@ -219,6 +245,8 @@ display_read_accuracy <- function(
 
         if (matches >= 0) {
           accuracies <- c(accuracies, matches / alignment_length)
+          q_str <- if (length(qual_strings) >= i) qual_strings[i] else NA_character_
+          mean_quals <- c(mean_quals, mean_read_quality(q_str))
         }
       }
     }
@@ -244,6 +272,12 @@ display_read_accuracy <- function(
     q95 <- quantile(accuracies, probs = 0.95)
     min_accuracy <- min(accuracies)
     max_accuracy <- max(accuracies)
+
+    # ONT-style mean read quality (Phred), summarised across per-read mean
+    # qscores. Reported on its own: real samples have no reference to align
+    # against, so the quality number is the part that transfers to actual data.
+    quality_available <- any(!is.na(mean_quals))
+    mean_quality <- if (quality_available) mean(mean_quals, na.rm = TRUE) else NA_real_
 
     # Initialize results list
     results <- list()
@@ -283,8 +317,13 @@ display_read_accuracy <- function(
                  color = theme_config$percentile_line_color,
                  size = 3, angle = 90) +
         labs(title = "Distribution of Nanopore Read Accuracies",
-             subtitle = sprintf("Mean: %.4f, Median: %.4f, 5th perc: %.4f, N: %d",
-                                mean_accuracy, median_accuracy, fifth, length(accuracies)),
+             subtitle = if (quality_available) {
+               sprintf("Mean: %.4f, Median: %.4f, 5th perc: %.4f, Mean Q: %.1f, N: %d",
+                       mean_accuracy, median_accuracy, fifth, mean_quality, length(accuracies))
+             } else {
+               sprintf("Mean: %.4f, Median: %.4f, 5th perc: %.4f, N: %d",
+                       mean_accuracy, median_accuracy, fifth, length(accuracies))
+             },
              x = "Read Accuracy",
              y = "Frequency",
              caption = "Analysis of DNA CS standard") +
@@ -317,10 +356,13 @@ display_read_accuracy <- function(
 
     # Create table if requested
     if (output_format %in% c("table", "both")) {
+      fmt_q <- function(x) if (is.na(x)) "NA" else sprintf("%.2f", x)
+
       summary_table <- data.frame(
         Metric = c("Mean Accuracy", "Median Accuracy", "Standard Deviation",
                    "Minimum", "Maximum", "5th Percentile", "25th Percentile",
-                   "75th Percentile", "95th Percentile", "Number of Reads"),
+                   "75th Percentile", "95th Percentile",
+                   "Mean Read Quality (Q)", "Number of Reads"),
         Value = c(
           sprintf("%.4f", mean_accuracy),
           sprintf("%.4f", median_accuracy),
@@ -331,6 +373,7 @@ display_read_accuracy <- function(
           sprintf("%.4f", q25),
           sprintf("%.4f", q75),
           sprintf("%.4f", q95),
+          fmt_q(mean_quality),
           as.character(length(accuracies))
         ),
         stringsAsFactors = FALSE
@@ -431,10 +474,15 @@ display_read_accuracy <- function(
       }
     }
 
-    # Save raw accuracies if output_dir is specified
+    # Save raw per-read metrics if output_dir is specified
     if (!is.null(output_dir)) {
       write.table(accuracies, paste0(output_dir, "read_accuracies.txt"),
                   row.names = FALSE, col.names = FALSE)
+      write.csv(
+        data.frame(accuracy = accuracies, mean_quality = mean_quals),
+        paste0(output_dir, "read_metrics.csv"),
+        row.names = FALSE
+      )
       cat("Output saved to:", output_dir, "\n")
     }
 

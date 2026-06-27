@@ -190,7 +190,7 @@ test_that("display_read_accuracy returns list with output_format='both'", {
   result <- display_read_accuracy(temp_fastq, output_format = "both", table_format = "data.frame")
 
   expect_type(result, "list")
-  expect_named(result, c("plot", "table"))
+  expect_true(all(c("plot", "table") %in% names(result)))
   expect_s3_class(result$plot, "ggplot")
   expect_s3_class(result$table, "data.frame")
 })
@@ -359,7 +359,8 @@ test_that("display_read_accuracy table contains expected metrics", {
   expected_metrics <- c(
     "Mean Accuracy", "Median Accuracy", "Standard Deviation",
     "Minimum", "Maximum", "5th Percentile", "25th Percentile",
-    "75th Percentile", "95th Percentile", "Number of Reads"
+    "75th Percentile", "95th Percentile",
+    "Mean Read Quality (Q)", "Number of Reads"
   )
 
   expect_true(all(expected_metrics %in% result$Metric))
@@ -386,6 +387,50 @@ test_that("display_read_accuracy returns NULL for empty alignment", {
   )
 
   expect_null(result)
+})
+
+# ============================================================================
+# Read Quality (ONT-style Phred) Tests
+# ============================================================================
+
+test_that("display_read_accuracy reports ONT-style mean read quality in table", {
+  skip_if_not(has_dependencies, "minimap2 or samtools not available")
+
+  temp_fastq <- create_test_fastq(10)
+  on.exit(unlink(temp_fastq))
+
+  result <- display_read_accuracy(temp_fastq, output_format = "table",
+                                  table_format = "data.frame")
+
+  expect_true("Mean Read Quality (Q)" %in% result$Metric)
+  # The deprecated correlation/median quality metrics should be gone
+  expect_false("Median Read Quality (Q)" %in% result$Metric)
+  expect_false("Accuracy-Quality Correlation" %in% result$Metric)
+
+  # All synthetic reads use 'I' (Q40), so the ONT-style mean quality is ~40
+  mean_q <- as.numeric(result$Value[result$Metric == "Mean Read Quality (Q)"])
+  expect_false(is.na(mean_q))
+  expect_equal(mean_q, 40, tolerance = 0.1)
+})
+
+test_that("display_read_accuracy saves per-read metrics CSV with quality", {
+  skip_if_not(has_dependencies, "minimap2 or samtools not available")
+
+  temp_fastq <- create_test_fastq(10)
+  temp_dir <- tempfile()
+  on.exit({
+    unlink(temp_fastq)
+    unlink(temp_dir, recursive = TRUE)
+  })
+
+  display_read_accuracy(temp_fastq, output_dir = temp_dir, output_format = "plot")
+
+  metrics_file <- file.path(temp_dir, "read_metrics.csv")
+  expect_true(file.exists(metrics_file))
+
+  metrics <- read.csv(metrics_file)
+  expect_true(all(c("accuracy", "mean_quality") %in% names(metrics)))
+  expect_true(all(metrics$accuracy >= 0 & metrics$accuracy <= 1))
 })
 
 # ============================================================================
@@ -460,7 +505,7 @@ test_that("display_read_accuracy full workflow with all outputs", {
 
   # Check return structure
   expect_type(result, "list")
-  expect_named(result, c("plot", "table"))
+  expect_true(all(c("plot", "table") %in% names(result)))
   expect_s3_class(result$plot, "ggplot")
   expect_s3_class(result$table, "data.frame")
 
@@ -468,8 +513,9 @@ test_that("display_read_accuracy full workflow with all outputs", {
   expect_true(file.exists(file.path(temp_dir, "accuracy_distribution.png")))
   expect_true(file.exists(file.path(temp_dir, "accuracy_summary.csv")))
   expect_true(file.exists(file.path(temp_dir, "read_accuracies.txt")))
+  expect_true(file.exists(file.path(temp_dir, "read_metrics.csv")))
 
   # Check table content
-  expect_equal(nrow(result$table), 10)
+  expect_equal(nrow(result$table), 11)
   expect_true(all(c("Metric", "Value") %in% names(result$table)))
 })

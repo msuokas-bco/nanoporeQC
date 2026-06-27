@@ -39,7 +39,7 @@ Depends on output_format:
 \itemize{
 \item "plot": A ggplot2 object showing the distribution of read accuracies
 \item "table": An HTML table (browsable) or data.frame with summary statistics
-\item "both": A list with $plot and $table elements
+\item "both": A list with $plot (accuracy histogram) and $table elements
 \item NULL if no aligned reads are found
 }
 }
@@ -66,6 +66,14 @@ and available in the system PATH.
 
 When output_format includes "table", the following statistics are provided:
 mean, median, standard deviation, min, max, and various percentiles (5th, 25th, 75th, 95th).
+
+Per-read basecall quality is also reported as an ONT-style mean Phred score.
+For each read the per-base Phred values are converted to error probabilities,
+averaged, and converted back to a Phred score (Q = -10 * log10(mean error
+probability)), matching how MinKNOW/pycoQC report the per-read mean qscore.
+The table adds the mean read quality (Q) across all aligned reads, and the
+per-read accuracy and quality are written to read_metrics.csv when output_dir
+is set.
 
 The theme parameter creates visual consistency between plots and tables, offering 15
 professional themes from the Quarto/Bootswatch collection. Each theme's colors are
